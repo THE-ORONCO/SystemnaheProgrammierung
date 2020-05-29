@@ -3,7 +3,7 @@
 ;----------------------------------
 CSEG AT 0H
 ; ORG 100H; TODO: brauchen wir dashier wirklich??? Sagt, wo das Programm im Speicher abgelegt wird...
-LJMP Anfang
+LJMP Init
 
 
 ; Eingabevektoren TAST und SENS
@@ -53,13 +53,16 @@ CLOSE_2 EQU MOTR.3
 
 
 ; INITIALISIERUNG
-MOV TAST, #00H
-MOV SENS, #00H
-MOV MOTR, #00H
+Init:
+    MOV TAST, #00H
+    MOV SENS, #00H
+    MOV MOTR, #00H
 
-MOV P0, #00H ; P0 wird verwendet um TAST von der IDE anzusprechen
-MOV P1, #00H ; P1 wird verwendet um SENS in der IDE anzuzeigen
-MOV P2, #00H ; P2 wird verwendet um MOTR in der IDE anzuzeigen
+    MOV P0, #00H ; P0 wird verwendet um TAST von der IDE anzusprechen
+    MOV P1, #00H ; P1 wird verwendet um SENS in der IDE anzuzeigen
+    MOV P2, #00H ; P2 wird verwendet um MOTR in der IDE anzuzeigen
+
+    LJMP Anfang
 
 
 ;--------------------
