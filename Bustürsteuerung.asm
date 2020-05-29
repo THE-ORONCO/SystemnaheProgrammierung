@@ -6,16 +6,46 @@ LJMP Anfang
 ORG 100H
 
 ; Eingabevektor
-EIN1 EQU 20H
-START1 EQU EIN1.0
-START2 EQU EIN1.1
-STOP1 EQU EIN1.2
-STOP2 EQU EIN1.3
-G_AUF EQU EIN1.5
-G_ZU EQU EIN1.6
-G_KONT EQU EIN1.7
+; Taster:
+; STOP_IN_1     Taster, zum Öffnen der Tür1 von innnen (Stop-Taster)
+; STOP_IN_2     Taster, zum Öffnen der Tür2 von innnen (Stop-Taster)
+; STOP_OUT_1    Taster, zum Öffnen der Tür1 von außen
+; STOP_OUT_2    Taster, zum Öffnen der Tür1 von außen
+; DRIVERS_OK    Freigabe-Taster des Busfahrers
+; Sensoren:
+; OPENED_1      Ausgabe des Geöffnet-Sensors der Tür1
+; OPENED_2      Ausgabe des Geöffnet-Sensors der Tür2
+; CLOSED_1      Ausgabe des Geschlossen-Sensors der Tür1
+; CLOSED_2      Ausgabe des Geschlossen-Sensors der Tür2
+; BLOCKED_1     Jemand steht in der schließenden Tür1
+; BLOCKED_2     Jemand steht in der schließenden Tür2
+
+TAST EQU 20H
+SENS EQU 21H
+
+STOP_IN_1 EQU TAST.0
+STOP_IN_2 EQU TAST.1
+STOP_OUT_1 EQU TAST.2
+STOP_OUT_2 EQU TAST.3
+DRIVERS_OK EQU TAST.4
+
+OPENED_1 EQU SENS.4
+OPENED_2 EQU SENS.5
+CLOSED_1 EQU SENS.6
+CLOSED_2 EQU SENS.7
+BlOCKED_1 EQU SENS.1
+BlOCKED_2 EQU SENS.2
+
 ; Ausgabevektor
-AUS3 EQU 21H
+; OPEN_1        Tür 1 soll geöffnet werden
+; OPEN_2        Tür 1 soll geöffnet werden
+; CLOSE_1       Tür 1 soll geöffnet werden
+; CLOSE_2       Tür 1 soll geöffnet werden
+;
+;
+;
+;
+AUS3 EQU 22H
 M_AUF EQU AUS3.0
 M_ZU EQU AUS3.1
 HUPE EQU AUS3.7
