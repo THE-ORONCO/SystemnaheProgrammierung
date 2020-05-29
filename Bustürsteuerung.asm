@@ -1,5 +1,5 @@
 ;----------------------------------
-; garagentor-Steuerung
+; Bustürsteuerung-Steuerung
 ;----------------------------------
 CSEG AT 0H
 LJMP Anfang
