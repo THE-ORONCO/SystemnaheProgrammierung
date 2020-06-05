@@ -2,7 +2,7 @@
 ; Bustürsteuerung-Steuerung
 ;----------------------------------
 CSEG AT 0H
-; ORG 100H; TODO: brauchen wir dashier wirklich??? Sagt, wo das Programm im Speicher abgelegt wird...
+ORG 100H; TODO: brauchen wir dashier wirklich??? Sagt, wo das Programm im Speicher abgelegt wird...
 LJMP Init
 
 
@@ -33,12 +33,12 @@ STOP_OUT_2 EQU TAST.3
 DRIVERS_OK EQU TAST.4
 
 ; Das was der Bus fühlt (Gefühle bzw. Sensoren)
-OPENED_1   EQU SENS.1
-OPENED_2   EQU SENS.2
-CLOSED_1   EQU SENS.3
-CLOSED_2   EQU SENS.4
-BlOCKED_1  EQU SENS.5
-BlOCKED_2  EQU SENS.6
+OPENED_1   EQU SENS.0
+OPENED_2   EQU SENS.1
+CLOSED_1   EQU SENS.2
+CLOSED_2   EQU SENS.3
+BlOCKED_1  EQU SENS.4
+BlOCKED_2  EQU SENS.5
 
 ; Ausgabevektor
 ; OPEN_1        Tür 1 soll geöffnet werden
@@ -55,7 +55,9 @@ CLOSE_2 EQU MOTR.3
 ; INITIALISIERUNG
 Init:
     MOV TAST, #00H
-    MOV SENS, #00H
+    MOV SENS, #00H ; statt oxC um die Closed Variablen zu setzen
+    MOV CLOSED_1, 1 ; Tür eins ist geschlossen
+    MOV CLOSED_2, 1 ; Tür zwei ist geschlossen
     MOV MOTR, #00H
 
     MOV P0, #00H ; P0 wird verwendet um TAST von der IDE anzusprechen
@@ -68,11 +70,18 @@ Init:
 ;--------------------
 ; PROGRAMM-SCHLEIFE
 ;--------------------
+
 Anfang:
     ; Eingaben aus Port 0 in TAST schreiben und SENS und MOTR in Port 1 und 2 schreiben
     MOV TAST, P0
     MOV P1, SENS
     MOV P2, MOTR
+
+    ; Abfrage ob ein Stop-Taster für Tür 1 gedrückt wurder
+    MOV C, STOP_IN_1
+    ORL C, STOP_OUT_1
+
+    ANL C, Freigabe
     
     ;-------------------------------------------------------------------------- Ende von unserem
 
