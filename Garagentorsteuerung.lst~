@@ -68,10 +68,8 @@ Garagentorsteuerung                                                             
 0140 8521B0             67     MOV P3, AUS3
                         68     ; SCHLEIFENENDE
 0143 020109             69     LJMP Anfang
-                        70
-                        71
-                        72     ;----------------
-                        73     END
+                        70     ;----------------
+                        71     END
 ASSEMBLY COMPLETE, NO ERRORS FOUND, NO WARNINGS
 
 

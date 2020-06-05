@@ -1,0 +1,5 @@
+# MCU 8051 IDE: Virtual HW component configuration file
+# Project: Bustürshit(0)
+# Component: LED Panel
+
+LedPanel {{4 2 0 2 5 2 1 2 6 2 2 2 7 2 3 2} {4 - 0 7 5 - 1 - 6 - 2 - 7 - 3 -} {} {Motor-Output; 0->Motor1 an;} red 1}

@@ -1,79 +1,149 @@
-Garagentorsteuerung                                                                                                     PAGE 1
+Bustürsteuerung                                                                                                         PAGE 1
                          1     ;----------------------------------
-                         2     ; garagentor-Steuerung
+                         2     ; Bustürsteuerung-Steuerung
                          3     ;----------------------------------
                          4     CSEG AT 0H
-0000 020109              5     LJMP Anfang
-                         6     ORG 100H
+0000 02000F              5     LJMP Init
+                         6     ORG 100H; TODO: brauchen wir dashier wirklich??? Sagt, wo das Programm im Speicher abgelegt wird...
                          7
-                         8     ; Eingabevektor
-  0020                   9     EIN1 EQU 20H
-  0000                  10     START1 EQU EIN1.0
-  0001                  11     START2 EQU EIN1.1
-  0002                  12     STOP1 EQU EIN1.2
-  0003                  13     STOP2 EQU EIN1.3
-  0005                  14     G_AUF EQU EIN1.5
-  0006                  15     G_ZU EQU EIN1.6
-  0007                  16     G_KONT EQU EIN1.7
-                        17     ; Ausgabevektor
-  0021                  18     AUS3 EQU 21H
-  0008                  19     M_AUF EQU AUS3.0
-  0009                  20     M_ZU EQU AUS3.1
-  000F                  21     HUPE EQU AUS3.7
-                        22     ; Merker
-  0022                  23     M1 EQU 22H
-                        24     ; INITIALISIERUNG
-0100 752000             25     MOV EIN1, #00H
-0103 752100             26     MOV AUS3, #00H
-0106 7590FF             27     MOV P1, #0FFH
-                        28     ;--------------------
-                        29     ; SCHLEIFE
-                        30     ;--------------------
-                        31     Anfang:
-0109 859020             32     MOV EIN1, P1
-                        33     ;--------------------
-010C A200               34     MOV C, START1
-010E 7201               35     ORL C, START2
-0110 8205               36     ANL C, G_AUF
-0112 A007               37     ORL C, /G_KONT
-0114 5002               38     JNC S1
-0116 D208               39     SETB M_AUF
-                        40     S1:
-0118 A209               41     MOV C,M_ZU
-011A A002               42     ORL C, /STOP1
-011C A003               43     ORL C, /STOP2
-011E A005               44     ORL C, /G_AUF
-0120 5002               45     JNC S2
-0122 C208               46     CLR M_AUF
-                        47     S2:
-0124 A200               48     MOV C, START1
-0126 7201               49     ORL C, START2
-0128 B005               50     ANL C, /G_AUF
-012A 5002               51     JNC S3
-012C D209               52     SETB M_ZU
-                        53     S3:
-012E A208               54     MOV C, M_AUF
-0130 A002               55     ORL C, /STOP1
-0132 A003               56     ORL C, /STOP2
-0134 A006               57     ORL C, /G_ZU
-0136 A007               58     ORL C, /G_KONT
-0138 5002               59     JNC S4
-013A C209               60     CLR M_ZU
-                        61     S4:
-013C A209               62     MOV C, M_ZU
-013E 920F               63     Mov HUPE, C
-                        64     ;-------------------
-                        65     ; Ausgabe
-                        66     ;-------------------
-0140 8521B0             67     MOV P3, AUS3
-                        68     ; SCHLEIFENENDE
-0143 020109             69     LJMP Anfang
-                        70
+                         8     ; Einsprung für den Timeout des Timers
+                         9     ORG 0Bh
+****WARNING:ThisORGhaslowervaluethanthepreviousone
+000B 120054             10     call TIMEOUT_TIMER_DOOR_1
+000E 32                 11     reti
+                        12
+                        13
+                        14     ; Eingabevektoren TAST und SENS
+                        15     ; Taster:
+                        16     ; STOP_IN_1     Taster, zum Öffnen der Tür 1 von innnen (Stop-Taster)
+                        17     ; STOP_IN_2     Taster, zum Öffnen der Tür 2 von innnen (Stop-Taster)
+                        18     ; STOP_OUT_1    Taster, zum Öffnen der Tür 1 von außen
+                        19     ; STOP_OUT_2    Taster, zum Öffnen der Tür 2 von außen
+                        20     ; DRIVERS_OK    Freigabe-Taster des Busfahrers
+                        21     ;
+                        22     ; Sensoren:
+                        23     ; OPENED_1      Ausgabe des Geöffnet-Sensors der Tür 1
+                        24     ; OPENED_2      Ausgabe des Geöffnet-Sensors der Tür 2
+                        25     ; CLOSED_1      Ausgabe des Geschlossen-Sensors der Tür 1
+                        26     ; CLOSED_2      Ausgabe des Geschlossen-Sensors der Tür 2
+                        27     ; BLOCKED_1     Jemand steht in der schließenden Tür 1
+                        28     ; BLOCKED_2     Jemand steht in der schließenden Tür 2
+                        29
+  0020                  30     TAST EQU 20H
+  0021                  31     SENS EQU 21H
+                        32
+                        33     ; Zeug das Menschen verändern können (Taster)
+  0000                  34     STOP_IN_1  EQU TAST.0
+  0001                  35     STOP_IN_2  EQU TAST.1
+  0002                  36     STOP_OUT_1 EQU TAST.2
+  0003                  37     STOP_OUT_2 EQU TAST.3
+  0004                  38     DRIVERS_OK EQU TAST.4
+                        39
+                        40     ; Das was der Bus fühlt (Gefühle bzw. Sensoren)
+  0008                  41     OPENED_1   EQU SENS.0
+  0009                  42     OPENED_2   EQU SENS.1
+  000A                  43     CLOSED_1   EQU SENS.2
+  000B                  44     CLOSED_2   EQU SENS.3
+  000C                  45     BlOCKED_1  EQU SENS.4
+  000D                  46     BlOCKED_2  EQU SENS.5
+                        47
+                        48     ; Ausgabevektor
+                        49     ; OPEN_1        Tür 1 soll geöffnet werden
+                        50     ; OPEN_2        Tür 2 soll geöffnet werden
+                        51     ; CLOSE_1       Tür 1 soll geschlossen werden
+                        52     ; CLOSE_2       Tür 2 soll geschlossen werden
+  0022                  53     MOTR EQU 22H
+  0010                  54     OPEN_1 EQU MOTR.0
+  0011                  55     OPEN_2 EQU MOTR.1
+  0012                  56     CLOSE_1 EQU MOTR.2
+  0013                  57     CLOSE_2 EQU MOTR.3
+                        58
+                        59
+                        60     ; INITIALISIERUNG
+                        61     Init:
+000F 752000             62         MOV TAST, #00H
+0012 752100             63         MOV SENS, #00H ; oxC um die Closed Variablen zu setzen, wird duch P1 gesetzt
+                        64         ; MOV CLOSED_1, 1 ; Tür eins ist geschlossen
+                        65         ; MOV CLOSED_2, 1 ; Tür zwei ist geschlossen
+0015 752200             66         MOV MOTR, #00H
+                        67
+0018 758000             68         MOV P0, #00H ; P0 wird verwendet um TAST von der IDE anzusprechen
+001B 75900C             69         MOV P1, #0CH ; P1 wird verwendet um SENS in der IDE anzuzeigen
+001E 75A000             70         MOV P2, #00H ; P2 wird verwendet um MOTR in der IDE anzuzeigen
                         71
-                        72     ;----------------
-                        73     END
-ASSEMBLY COMPLETE, NO ERRORS FOUND, NO WARNINGS
+                        72         ; TIMER Kram
+0021 75A892             73         MOV IE, #10010010b
+0024 758902             74         MOV tmod, #00000010b
+0027 758A00             75         MOV tl0, #000h  ; Timer-Initionalsierung
+002A 758C01             76         MOV th0, #001h
+                        77
+002D 020030             78         LJMP Anfang
+                        79
+                        80
+                        81     ;--------------------
+                        82     ; PROGRAMM-SCHLEIFE
+                        83     ;--------------------
+                        84
+                        85     Anfang:
+                        86         ; Eingaben aus Port 0 in TAST schreiben und SENS und MOTR in Port 1 und 2 (IDE-Anzeige) schreiben
+0030 858020             87         MOV TAST, P0
+0033 859021             88         MOV SENS, P1
+0036 8522A0             89         MOV P2, MOTR
+                        90
+                        91         ; Abfrage ob ein Stop-Taster (innen oder außen) für Tür 1 gedrückt wurder
+0039 A200               92         MOV C, STOP_IN_1
+003B 7202               93         ORL C, STOP_OUT_1
+                        94
+                        95         ; Wenn Stop-Taster 1 und Freigabe gesetzt, OPEN_1 (Motor 1) auf 1 setzen
+003D 8204               96         ANL C, DRIVERS_OK
+003F 9210               97         MOV OPEN_1, C
+                        98
+                        99         ; Platz für die 2. Tür
+                       100         ; ...
+                       101
+                       102
+                       103         ; Schauen ob die Tür 1 geöffnet ist (Endtaster gesetzt) und wenn ja den Motor beenden
+0041 A210              104         MOV C, OPEN_1
+0043 8208              105         ANL C, OPENED_1
+0045 4008              106         JC START_TIMER_DOOR_1
+                       107     CONTINUE:
+0047 B3                108         CPL C
+0048 8210              109         ANL C, OPEN_1
+004A 9210              110         MOV OPEN_1, C
+                       111
+                       112
+                       113         ; ...
+                       114
+004C 020030            115         LJMP Anfang
+                       116
+                       117     START_TIMER_DOOR_1:
+004F D28C              118         setb tr0; start timer0
+0051 020047            119         LJMP CONTINUE
+                       120
+                       121     TIMEOUT_TIMER_DOOR_1:
+0054 09                122         inc r1
+0055 B90510            123             cjne    r1, #5h, TMP ; Schleife der Wiederholungen des Timers (wir brauchen 39368 Wiederholun
+0058 7900              124             mov     r1, #00h
+                       125
+                       126         ; ...
+005A 850000            127             MOV STOP_IN_1, 0
+005D C280              128         CLR P0.0
+005F 850002            129         MOV STOP_OUT_1, 0
+0062 C282              130         CLR P0.2
+0064 850112            131         MOV CLOSE_1, 1
+                       132         ; ...
+                       133
+0067 22                134             ret
+                       135
+                       136     TMP:
+0068 22                137         ret
+                       138
+                       139     END
+ASSEMBLY COMPLETE, NO ERRORS FOUND, 1 WARNING
 
+
+ERROR SUMMARY:
+Line 9, WARNING:ThisORGhaslowervaluethanthepreviousone
 
 SYMBOL TABLE:
 ??MCU_8051_IDE . . . . . . . . . . .  N  NUMB  8051H  NOT USED
@@ -86,13 +156,14 @@ ADCLK. . . . . . . . . . . . . . . .  D  ADDR  00F2H  NOT USED
 ADCON. . . . . . . . . . . . . . . .  D  ADDR  00F3H  NOT USED
 ADDH . . . . . . . . . . . . . . . .  D  ADDR  00F5H  NOT USED
 ADDL . . . . . . . . . . . . . . . .  D  ADDR  00F4H  NOT USED
-ANFANG . . . . . . . . . . . . . . .  C  ADDR  0109H
-AUS3 . . . . . . . . . . . . . . . .  N  NUMB  0021H
+ANFANG . . . . . . . . . . . . . . .  C  ADDR  0030H
 AUXR . . . . . . . . . . . . . . . .  D  ADDR  008EH  NOT USED
 AUXR1. . . . . . . . . . . . . . . .  D  ADDR  00A2H  NOT USED
 B. . . . . . . . . . . . . . . . . .  D  ADDR  00F0H  NOT USED
 BDRCON . . . . . . . . . . . . . . .  D  ADDR  009BH  NOT USED
 BDRCON_1 . . . . . . . . . . . . . .  D  ADDR  009CH  NOT USED
+BLOCKED_1. . . . . . . . . . . . . .  N  NUMB  000CH  NOT USED
+BLOCKED_2. . . . . . . . . . . . . .  N  NUMB  000DH  NOT USED
 BRL. . . . . . . . . . . . . . . . .  D  ADDR  009AH  NOT USED
 CCAP0H . . . . . . . . . . . . . . .  D  ADDR  00FAH  NOT USED
 CCAP0L . . . . . . . . . . . . . . .  D  ADDR  00EAH  NOT USED
@@ -126,7 +197,12 @@ CKRL . . . . . . . . . . . . . . . .  D  ADDR  0097H  NOT USED
 CKSEL. . . . . . . . . . . . . . . .  D  ADDR  0085H  NOT USED
 CL . . . . . . . . . . . . . . . . .  D  ADDR  00E9H  NOT USED
 CLKREG . . . . . . . . . . . . . . .  D  ADDR  008FH  NOT USED
+CLOSED_1 . . . . . . . . . . . . . .  N  NUMB  000AH  NOT USED
+CLOSED_2 . . . . . . . . . . . . . .  N  NUMB  000BH  NOT USED
+CLOSE_1. . . . . . . . . . . . . . .  N  NUMB  0012H
+CLOSE_2. . . . . . . . . . . . . . .  N  NUMB  0013H  NOT USED
 CMOD . . . . . . . . . . . . . . . .  D  ADDR  00D9H  NOT USED
+CONTINUE . . . . . . . . . . . . . .  C  ADDR  0047H
 CPRL2. . . . . . . . . . . . . . . .  B  ADDR  00C8H  NOT USED
 CR . . . . . . . . . . . . . . . . .  B  ADDR  00DEH  NOT USED
 CT2. . . . . . . . . . . . . . . . .  B  ADDR  00C9H  NOT USED
@@ -137,10 +213,10 @@ DP1H . . . . . . . . . . . . . . . .  D  ADDR  0085H  NOT USED
 DP1L . . . . . . . . . . . . . . . .  D  ADDR  0084H  NOT USED
 DPH. . . . . . . . . . . . . . . . .  D  ADDR  0083H  NOT USED
 DPL. . . . . . . . . . . . . . . . .  D  ADDR  0082H  NOT USED
+DRIVERS_OK . . . . . . . . . . . . .  N  NUMB  0004H
 EA . . . . . . . . . . . . . . . . .  B  ADDR  00AFH  NOT USED
 EC . . . . . . . . . . . . . . . . .  B  ADDR  00AEH  NOT USED
 EECON. . . . . . . . . . . . . . . .  D  ADDR  0096H  NOT USED
-EIN1 . . . . . . . . . . . . . . . .  N  NUMB  0020H
 ES . . . . . . . . . . . . . . . . .  B  ADDR  00ACH  NOT USED
 ET0. . . . . . . . . . . . . . . . .  B  ADDR  00A9H  NOT USED
 ET1. . . . . . . . . . . . . . . . .  B  ADDR  00ABH  NOT USED
@@ -153,13 +229,10 @@ EXTI0. . . . . . . . . . . . . . . .  C  ADDR  0003H  NOT USED
 EXTI1. . . . . . . . . . . . . . . .  C  ADDR  0013H  NOT USED
 F0 . . . . . . . . . . . . . . . . .  B  ADDR  00D5H  NOT USED
 FE . . . . . . . . . . . . . . . . .  B  ADDR  009FH  NOT USED
-G_AUF. . . . . . . . . . . . . . . .  N  NUMB  0005H
-G_KONT . . . . . . . . . . . . . . .  N  NUMB  0007H
-G_ZU . . . . . . . . . . . . . . . .  N  NUMB  0006H
-HUPE . . . . . . . . . . . . . . . .  N  NUMB  000FH
-IE . . . . . . . . . . . . . . . . .  D  ADDR  00A8H  NOT USED
+IE . . . . . . . . . . . . . . . . .  D  ADDR  00A8H
 IE0. . . . . . . . . . . . . . . . .  B  ADDR  0089H  NOT USED
 IE1. . . . . . . . . . . . . . . . .  B  ADDR  008BH  NOT USED
+INIT . . . . . . . . . . . . . . . .  C  ADDR  000FH
 INT0 . . . . . . . . . . . . . . . .  B  ADDR  00B2H  NOT USED
 INT1 . . . . . . . . . . . . . . . .  B  ADDR  00B3H  NOT USED
 IP . . . . . . . . . . . . . . . . .  D  ADDR  00B8H  NOT USED
@@ -173,18 +246,20 @@ IT1. . . . . . . . . . . . . . . . .  B  ADDR  008AH  NOT USED
 KBE. . . . . . . . . . . . . . . . .  D  ADDR  009DH  NOT USED
 KBF. . . . . . . . . . . . . . . . .  D  ADDR  009EH  NOT USED
 KBLS . . . . . . . . . . . . . . . .  D  ADDR  009CH  NOT USED
-M1 . . . . . . . . . . . . . . . . .  N  NUMB  0022H  NOT USED
-M_AUF. . . . . . . . . . . . . . . .  N  NUMB  0008H
-M_ZU . . . . . . . . . . . . . . . .  N  NUMB  0009H
+MOTR . . . . . . . . . . . . . . . .  N  NUMB  0022H
+OPENED_1 . . . . . . . . . . . . . .  N  NUMB  0008H
+OPENED_2 . . . . . . . . . . . . . .  N  NUMB  0009H  NOT USED
+OPEN_1 . . . . . . . . . . . . . . .  N  NUMB  0010H
+OPEN_2 . . . . . . . . . . . . . . .  N  NUMB  0011H  NOT USED
 OSCCON . . . . . . . . . . . . . . .  D  ADDR  0086H  NOT USED
 OV . . . . . . . . . . . . . . . . .  B  ADDR  00D2H  NOT USED
 P. . . . . . . . . . . . . . . . . .  B  ADDR  00D0H  NOT USED
-P0 . . . . . . . . . . . . . . . . .  D  ADDR  0080H  NOT USED
+P0 . . . . . . . . . . . . . . . . .  D  ADDR  0080H
 P1 . . . . . . . . . . . . . . . . .  D  ADDR  0090H
 P1M1 . . . . . . . . . . . . . . . .  D  ADDR  00D4H  NOT USED
 P1M2 . . . . . . . . . . . . . . . .  D  ADDR  00E2H  NOT USED
-P2 . . . . . . . . . . . . . . . . .  D  ADDR  00A0H  NOT USED
-P3 . . . . . . . . . . . . . . . . .  D  ADDR  00B0H
+P2 . . . . . . . . . . . . . . . . .  D  ADDR  00A0H
+P3 . . . . . . . . . . . . . . . . .  D  ADDR  00B0H  NOT USED
 P3M1 . . . . . . . . . . . . . . . .  D  ADDR  00D5H  NOT USED
 P3M2 . . . . . . . . . . . . . . . .  D  ADDR  00E3H  NOT USED
 P4 . . . . . . . . . . . . . . . . .  D  ADDR  00C0H  NOT USED
@@ -218,10 +293,6 @@ RI . . . . . . . . . . . . . . . . .  B  ADDR  0098H  NOT USED
 RS0. . . . . . . . . . . . . . . . .  B  ADDR  00D3H  NOT USED
 RS1. . . . . . . . . . . . . . . . .  B  ADDR  00D4H  NOT USED
 RXD. . . . . . . . . . . . . . . . .  B  ADDR  00B0H  NOT USED
-S1 . . . . . . . . . . . . . . . . .  C  ADDR  0118H
-S2 . . . . . . . . . . . . . . . . .  C  ADDR  0124H
-S3 . . . . . . . . . . . . . . . . .  C  ADDR  012EH
-S4 . . . . . . . . . . . . . . . . .  C  ADDR  013CH
 SADDR. . . . . . . . . . . . . . . .  D  ADDR  00A9H  NOT USED
 SADDR_0. . . . . . . . . . . . . . .  D  ADDR  00A9H  NOT USED
 SADDR_1. . . . . . . . . . . . . . .  D  ADDR  00AAH  NOT USED
@@ -230,6 +301,7 @@ SADEN_0. . . . . . . . . . . . . . .  D  ADDR  00B9H  NOT USED
 SADEN_1. . . . . . . . . . . . . . .  D  ADDR  00BAH  NOT USED
 SBUF . . . . . . . . . . . . . . . .  D  ADDR  0099H  NOT USED
 SCON . . . . . . . . . . . . . . . .  D  ADDR  0098H  NOT USED
+SENS . . . . . . . . . . . . . . . .  N  NUMB  0021H
 SINT . . . . . . . . . . . . . . . .  C  ADDR  0023H  NOT USED
 SM0. . . . . . . . . . . . . . . . .  B  ADDR  009FH  NOT USED
 SM1. . . . . . . . . . . . . . . . .  B  ADDR  009EH  NOT USED
@@ -241,32 +313,36 @@ SPDAT. . . . . . . . . . . . . . . .  D  ADDR  00C5H  NOT USED
 SPDR . . . . . . . . . . . . . . . .  D  ADDR  0086H  NOT USED
 SPSR . . . . . . . . . . . . . . . .  D  ADDR  00AAH  NOT USED
 SPSTA. . . . . . . . . . . . . . . .  D  ADDR  00C4H  NOT USED
-START1 . . . . . . . . . . . . . . .  N  NUMB  0000H
-START2 . . . . . . . . . . . . . . .  N  NUMB  0001H
-STOP1. . . . . . . . . . . . . . . .  N  NUMB  0002H
-STOP2. . . . . . . . . . . . . . . .  N  NUMB  0003H
+START_TIMER_DOOR_1 . . . . . . . . .  C  ADDR  004FH
+STOP_IN_1. . . . . . . . . . . . . .  N  NUMB  0000H
+STOP_IN_2. . . . . . . . . . . . . .  N  NUMB  0001H  NOT USED
+STOP_OUT_1 . . . . . . . . . . . . .  N  NUMB  0002H
+STOP_OUT_2 . . . . . . . . . . . . .  N  NUMB  0003H  NOT USED
 T0 . . . . . . . . . . . . . . . . .  B  ADDR  00B4H  NOT USED
 T1 . . . . . . . . . . . . . . . . .  B  ADDR  00B5H  NOT USED
 T2CON. . . . . . . . . . . . . . . .  D  ADDR  00C8H  NOT USED
 T2MOD. . . . . . . . . . . . . . . .  D  ADDR  00C9H  NOT USED
+TAST . . . . . . . . . . . . . . . .  N  NUMB  0020H
 TB8. . . . . . . . . . . . . . . . .  B  ADDR  009BH  NOT USED
 TCLK . . . . . . . . . . . . . . . .  B  ADDR  00CCH  NOT USED
 TCON . . . . . . . . . . . . . . . .  D  ADDR  0088H  NOT USED
 TF0. . . . . . . . . . . . . . . . .  B  ADDR  008DH  NOT USED
 TF1. . . . . . . . . . . . . . . . .  B  ADDR  008FH  NOT USED
 TF2. . . . . . . . . . . . . . . . .  B  ADDR  00CFH  NOT USED
-TH0. . . . . . . . . . . . . . . . .  D  ADDR  008CH  NOT USED
+TH0. . . . . . . . . . . . . . . . .  D  ADDR  008CH
 TH1. . . . . . . . . . . . . . . . .  D  ADDR  008DH  NOT USED
 TH2. . . . . . . . . . . . . . . . .  D  ADDR  00CDH  NOT USED
 TI . . . . . . . . . . . . . . . . .  B  ADDR  0099H  NOT USED
+TIMEOUT_TIMER_DOOR_1 . . . . . . . .  C  ADDR  0054H
 TIMER0 . . . . . . . . . . . . . . .  C  ADDR  000BH  NOT USED
 TIMER1 . . . . . . . . . . . . . . .  C  ADDR  001BH  NOT USED
 TIMER2 . . . . . . . . . . . . . . .  C  ADDR  002BH  NOT USED
-TL0. . . . . . . . . . . . . . . . .  D  ADDR  008AH  NOT USED
+TL0. . . . . . . . . . . . . . . . .  D  ADDR  008AH
 TL1. . . . . . . . . . . . . . . . .  D  ADDR  008BH  NOT USED
 TL2. . . . . . . . . . . . . . . . .  D  ADDR  00CCH  NOT USED
-TMOD . . . . . . . . . . . . . . . .  D  ADDR  0089H  NOT USED
-TR0. . . . . . . . . . . . . . . . .  B  ADDR  008CH  NOT USED
+TMOD . . . . . . . . . . . . . . . .  D  ADDR  0089H
+TMP. . . . . . . . . . . . . . . . .  C  ADDR  0068H
+TR0. . . . . . . . . . . . . . . . .  B  ADDR  008CH
 TR1. . . . . . . . . . . . . . . . .  B  ADDR  008EH  NOT USED
 TR2. . . . . . . . . . . . . . . . .  B  ADDR  00CAH  NOT USED
 TXD. . . . . . . . . . . . . . . . .  B  ADDR  00B1H  NOT USED
