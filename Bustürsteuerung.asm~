@@ -6,8 +6,13 @@ LJMP Init
 ORG 80H; TODO: brauchen wir dashier wirklich??? Sagt, wo das Programm im Speicher abgelegt wird...
 
 ; Einsprung für den Timeout des Timers
-ORG 0Bh
+ORG 000Bh
 CALL TIMEOUT_TIMER_DOOR_1
+RETI
+
+; Einsprung für den Timeout des Timers von Tür 2
+ORG 001Bh
+CALL TIMEOUT_TIMER_DOOR_2
 RETI
 
 
@@ -30,6 +35,7 @@ RETI
 
 
 
+; TODO bessere Adressen aussuchen weil die manuelle Änderung gerade echt kacke ist!
 ; Zeug das Menschen verändern können (Taster)
 TAST EQU 20H
 STOP_IN_1  EQU TAST.0
@@ -80,10 +86,16 @@ Init:
     MOV FF, #00H
 
     ; TIMER Kram
-    MOV IE, #10010010b
-    MOV tmod, #00000010b
-    MOV tl0, #000h  ; Timer-Initionalsierung 
+    MOV IE, #10011010b
+    MOV tmod, #00100010b ; 1. Bit für Timer0 -> mod 2 und 5. Bit für Timer1 -> mod 2
+    MOV tl0, #000h  ; Timer0-Initionalsierung 
     MOV th0, #001h
+
+    MOV tl1, #000h  ; Timer1-Initionalsierung 
+    MOV th1, #001h
+
+    MOV r1, #5h
+    MOV r2, #5h
 
     LJMP Anfang
 
@@ -99,6 +111,8 @@ Anfang:
     MOV P2, MOTR
     MOV P3, FF
 
+    ; ------------------------------------------ Tür 1
+
     ; Abfrage ob ein Stop-Taster (innen oder außen) für Tür 1 gedrückt wurder
     MOV C, STOP_IN_1
     ORL C, STOP_OUT_1
@@ -113,21 +127,11 @@ CONTINUE_AFTER_STOP_1_FF_SET:
 
 CONTINUE_AFTER_OPEN_1_FF_SET:
 
-
-    ; Platz für die 2. Tür
-    ; ...
-
-
     ; Schauen ob die Tür 1 geöffnet ist (Endtaster gesetzt) und wenn ja den Motor beenden und Timer starten
     MOV C, OPEN_1
     ANL C, OPENED_1
     JC START_TIMER_DOOR_1
 CONTINUE_AFTER_TIMER_1_SET:
-
-
-    ; Platz für die 2. Tür
-    ; ...
-
 
     ; Wenn Tür nicht zu ist und der Zu-Motor an ist, dann schaue ob Blockiert
     MOV C, CLOSED_1
@@ -137,7 +141,35 @@ CONTINUE_AFTER_TIMER_1_SET:
 
 CONTINUE_AFTER_CHECK_FOR_BLOCKED_DOOR_1:
 
-    ; ...
+    ; ------------------------------------------ Tür 2
+
+    ; Abfrage ob ein Stop-Taster (innen oder außen) für Tür 2 gedrückt wurder
+    MOV C, STOP_IN_2
+    ORL C, STOP_OUT_2
+    JC SET_STOP_2_FF
+
+CONTINUE_AFTER_STOP_2_FF_SET:
+
+    ; Wenn Stop-Taster 2 (FlipFlop) und Freigabe gesetzt, OPEN_2 (Motor 2) auf 1 setzen
+    MOV C, STOP_2_FF
+    ANL C, DRIVERS_OK
+    JC SET_OPEN_2_FF
+
+CONTINUE_AFTER_OPEN_2_FF_SET:
+
+    ; Schauen ob die Tür 2 geöffnet ist (Endtaster gesetzt) und wenn ja den Motor beenden und Timer starten
+    MOV C, OPEN_2
+    ANL C, OPENED_2
+    JC START_TIMER_DOOR_2
+CONTINUE_AFTER_TIMER_2_SET:
+
+    ; Wenn Tür nicht zu ist und der Zu-Motor an ist, dann schaue ob Blockiert
+    MOV C, CLOSED_2
+    CPL C
+    ANL C, CLOSE_2
+    JC CHECK_FOR_BLOCKED_DOOR_2
+
+CONTINUE_AFTER_CHECK_FOR_BLOCKED_DOOR_2:
 
     LJMP Anfang
 
@@ -149,17 +181,22 @@ CONTINUE_AFTER_CHECK_FOR_BLOCKED_DOOR_1:
 
 START_TIMER_DOOR_1:
     SETB tr0; start timer0
+    
+    ; MOV r1, #5h ; r1 auf 5 setzen; im echten Leben sollte das 39368
     LJMP CONTINUE_AFTER_TIMER_1_SET
 
 
 ; sobald Tür 1 geöffnet ist, läuft ein Timer, der bei jedem Interupt hierher springt
 TIMEOUT_TIMER_DOOR_1:
-    INC	r1 ; Hochzählen, wie oft der Timer abgelaufen ist
-    CJNE	r1, #5h, TMP ; Schleife der Wiederholungen des Timers (wir brauchen 39368 Wiederholungen)
+    ; INC	r1 ; Hochzählen, wie oft der Timer abgelaufen ist
+    ; CJNE	r1, #5h, TMP ; Schleife der Wiederholungen des Timers (wir brauchen 39368 Wiederholungen)
+    
+    DJNZ r1, TMP; r1 dekrementieren und wegspringen, wenn ungleich 0 (Decrement Jump Not Zero)
 
     ; Hier gehts weiter, wenn der Timer oft genug abgelaufen ist (wenn die Tür lange genug offen war)
     ; -> Timer & Motor ausschalten und Stop-Anfragen resetten
-    MOV	r1, #00h
+    ; MOV	r1, #00h
+    MOV r1, #5h ; r1 auf 5 setzen; im echten Leben sollte das 39368
     CLR tr0 ; stop timer0
 
     CLR STOP_1_FF; Resetten des Stop 1 FlipFlop
@@ -186,5 +223,48 @@ CHECK_FOR_BLOCKED_DOOR_1:
     MOV C, BlOCKED_1
     JC SET_OPEN_1_FF
     LJMP CONTINUE_AFTER_CHECK_FOR_BLOCKED_DOOR_1
+
+;-----------------------------------------------
+
+START_TIMER_DOOR_2:
+    SETB tr1; start timer1
+    ;MOV r2, #5h ; r2 auf 5 setzen; im echten Leben sollte das 39368
+    
+    LJMP CONTINUE_AFTER_TIMER_2_SET
+
+
+; sobald Tür 2 geöffnet ist, läuft ein Timer, der bei jedem Interupt hierher springt
+TIMEOUT_TIMER_DOOR_2:
+    ;INC	r2 ; Hochzählen, wie oft der Timer abgelaufen ist
+    ;CJNE	r2, #5h, TMP ; Schleife der Wiederholungen des Timers (wir brauchen 39368 Wiederholungen)
+    DJNZ r2, TMP
+
+    ; Hier gehts weiter, wenn der Timer oft genug abgelaufen ist (wenn die Tür lange genug offen war)
+    ; -> Timer & Motor ausschalten und Stop-Anfragen resetten
+    ; MOV	r2, #00h
+    MOV r2, #5h ; r2 auf 5 setzen; im echten Leben sollte das 39368
+    CLR tr1 ; stop timer1
+
+    CLR STOP_2_FF; Resetten des Stop 2 FlipFlop
+    CLR OPEN_2_FF ; Resetten des Open 2 FlopFlop
+    CLR OPEN_2 ; Motor nicht mehr auf öffnend setzen
+    SETB CLOSE_2 ; Motor auf schließend setzen
+
+    RET
+
+SET_STOP_2_FF:
+    SETB STOP_2_FF
+    LJMP CONTINUE_AFTER_STOP_2_FF_SET
+
+SET_OPEN_2_FF:
+    SETB OPEN_2_FF
+    SETB OPEN_2
+    CLR CLOSE_2
+    LJMP CONTINUE_AFTER_OPEN_2_FF_SET
+
+CHECK_FOR_BLOCKED_DOOR_2:
+    MOV C, BlOCKED_2
+    JC SET_OPEN_2_FF
+    LJMP CONTINUE_AFTER_CHECK_FOR_BLOCKED_DOOR_2
 
 END
