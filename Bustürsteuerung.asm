@@ -113,11 +113,6 @@ CONTINUE_AFTER_STOP_1_FF_SET:
 
 CONTINUE_AFTER_OPEN_1_FF_SET:
 
-
-    ; Platz für die 2. Tür
-    ; ...
-
-
     ; Schauen ob die Tür 1 geöffnet ist (Endtaster gesetzt) und wenn ja den Motor beenden und Timer starten
     MOV C, OPEN_1
     ANL C, OPENED_1
