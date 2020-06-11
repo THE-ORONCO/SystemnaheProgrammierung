@@ -61,11 +61,11 @@ CLOSE_2 EQU MOTR.3
 
 ; FlipFlops zum Zwischenspeichern
 
-FliFlo EQU 23H
-STOP_1_FF EQU FliFlo.0
-STOP_2_FF EQU FliFlo.1
-OPEN_1_FF EQU FliFlo.2
-OPEN_2_FF EQU FliFlo.3
+FF EQU 23H
+STOP_1_FF EQU FF.0
+STOP_2_FF EQU FF.1
+OPEN_1_FF EQU FF.2
+OPEN_2_FF EQU FF.3
 ; INITIALISIERUNG
 Init:
     MOV TAST, #00H
@@ -77,7 +77,7 @@ Init:
     MOV P1, #0CH ; P1 wird verwendet um SENS in der IDE anzuzeigen
     MOV P2, #00H ; P2 wird verwendet um MOTR in der IDE anzuzeigen
 
-    MOV FliFlo, #00H
+    MOV FF, #00H
 
     ; TIMER Kram
     MOV IE, #10010010b
@@ -97,7 +97,7 @@ Anfang:
     MOV TAST, P0
     MOV SENS, P1
     MOV P2, MOTR
-    MOV P3, FliFlo
+    MOV P3, FF
 
     ; Abfrage ob ein Stop-Taster (innen oder außen) für Tür 1 gedrückt wurder
     MOV C, STOP_IN_1
@@ -123,6 +123,19 @@ CONTINUE_AFTER_OPEN_1_FF_SET:
     ANL C, OPENED_1
     JC START_TIMER_DOOR_1
 CONTINUE_AFTER_TIMER_1_SET:
+
+
+    ; Platz für die 2. Tür
+    ; ...
+
+
+    ; Wenn Tür nicht zu ist und der Zu-Motor an ist, dann schaue ob Blockiert
+    MOV C, CLOSED_1
+    CPL C
+    ANL C, CLOSE_1
+    JC CHECK_FOR_BLOCKED_DOOR_1
+
+CONTINUE_AFTER_CHECK_FOR_BLOCKED_DOOR_1:
 
     ; ...
 
@@ -166,6 +179,12 @@ SET_STOP_1_FF:
 SET_OPEN_1_FF:
     SETB OPEN_1_FF
     SETB OPEN_1
+    CLR CLOSE_1
     LJMP CONTINUE_AFTER_OPEN_1_FF_SET
+
+CHECK_FOR_BLOCKED_DOOR_1:
+    MOV C, BlOCKED_1
+    JC SET_OPEN_1_FF
+    LJMP CONTINUE_AFTER_CHECK_FOR_BLOCKED_DOOR_1
 
 END
