@@ -9,12 +9,12 @@ Bustürsteuerung                                                                
                          8     ; Einsprung für den Timeout des Timers
                          9     ORG 000Bh
 ****WARNING:ThisORGhaslowervaluethanthepreviousone
-000B 120091             10     CALL TIMEOUT_TIMER_DOOR_1
+000B 120093             10     CALL TIMEOUT_TIMER_DOOR_1
 000E 32                 11     RETI
                         12
                         13     ; Einsprung für den Timeout des Timers von Tür 2
                         14     ORG 001Bh
-001B 1200BB             15     CALL TIMEOUT_TIMER_DOOR_2
+001B 1200BD             15     CALL TIMEOUT_TIMER_DOOR_2
 001E 32                 16     RETI
                         17
                         18
@@ -37,233 +37,239 @@ Bustürsteuerung                                                                
                         35
                         36
                         37
-                        38     ; Zeug das Menschen verändern können (Taster)
-  0020                  39     TAST EQU 20H
-  0000                  40     STOP_IN_1  EQU TAST.0
-  0001                  41     STOP_IN_2  EQU TAST.1
-  0002                  42     STOP_OUT_1 EQU TAST.2
-  0003                  43     STOP_OUT_2 EQU TAST.3
-  0004                  44     DRIVERS_OK EQU TAST.4
-                        45
-                        46     ; Das was der Bus fühlt (Gefühle bzw. Sensoren)
-  0021                  47     SENS EQU 21H
-  0008                  48     OPENED_1   EQU SENS.0
-  0009                  49     OPENED_2   EQU SENS.1
-  000A                  50     CLOSED_1   EQU SENS.2
-  000B                  51     CLOSED_2   EQU SENS.3
-  000C                  52     BlOCKED_1  EQU SENS.4
-  000D                  53     BlOCKED_2  EQU SENS.5
-                        54
-                        55     ; Ausgabevektor
-                        56     ; OPEN_1        Tür 1 soll geöffnet werden
-                        57     ; OPEN_2        Tür 2 soll geöffnet werden
-                        58     ; CLOSE_1       Tür 1 soll geschlossen werden
-                        59     ; CLOSE_2       Tür 2 soll geschlossen werden
-                        60
-  0022                  61     MOTR EQU 22H
-  0010                  62     OPEN_1 EQU MOTR.0
-  0011                  63     OPEN_2 EQU MOTR.1
-  0012                  64     CLOSE_1 EQU MOTR.2
-  0013                  65     CLOSE_2 EQU MOTR.3
-                        66
-                        67     ; FlipFlops zum Zwischenspeichern
-                        68
-  0023                  69     FF EQU 23H
-  0018                  70     STOP_1_FF EQU FF.0
-  0019                  71     STOP_2_FF EQU FF.1
-  001A                  72     OPEN_1_FF EQU FF.2
-  001B                  73     OPEN_2_FF EQU FF.3
-                        74     ; INITIALISIERUNG
-                        75     Init:
-001F 752000             76         MOV TAST, #00H
-0022 752100             77         MOV SENS, #00H ; oxC um die Closed Variablen zu setzen, wird duch P1 gesetzt
-                        78         ; MOV CLOSED_1, 1 ; Tür eins ist geschlossen
-0025 752200             79         MOV MOTR, #00H
-                        80
-0028 758000             81         MOV P0, #00H ; P0 wird verwendet um TAST von der IDE anzusprechen
-002B 75900C             82         MOV P1, #0CH ; P1 wird verwendet um SENS in der IDE anzuzeigen
-002E 75A000             83         MOV P2, #00H ; P2 wird verwendet um MOTR in der IDE anzuzeigen
-                        84
-0031 752300             85         MOV FF, #00H
-                        86
-                        87         ; TIMER Kram
-0034 75A89A             88         MOV IE, #10011010b
-0037 758922             89         MOV tmod, #00100010b ; 1. Bit für Timer0 -> mod 2 und 5. Bit für Timer1 -> mod 2
-003A 758A00             90         MOV tl0, #000h  ; Timer0-Initionalsierung
-003D 758C01             91         MOV th0, #001h
-                        92
-0040 758B00             93         MOV tl1, #000h  ; Timer1-Initionalsierung
-0043 758D01             94         MOV th1, #001h
-                        95
-0046 020049             96         LJMP Anfang
-                        97
-                        98
-                        99     ;-----------------------------------------
-                       100     ; PROGRAMM-SCHLEIFE
-                       101     ;-----------------------------------------
+                        38     ; TODO bessere Adressen aussuchen weil die manuelle Änderung gerade echt kacke ist!
+                        39     ; Zeug das Menschen verändern können (Taster)
+  0020                  40     TAST EQU 20H
+  0000                  41     STOP_IN_1  EQU TAST.0
+  0001                  42     STOP_IN_2  EQU TAST.1
+  0002                  43     STOP_OUT_1 EQU TAST.2
+  0003                  44     STOP_OUT_2 EQU TAST.3
+  0004                  45     DRIVERS_OK EQU TAST.4
+                        46
+                        47     ; Das was der Bus fühlt (Gefühle bzw. Sensoren)
+  0021                  48     SENS EQU 21H
+  0008                  49     OPENED_1   EQU SENS.0
+  0009                  50     OPENED_2   EQU SENS.1
+  000A                  51     CLOSED_1   EQU SENS.2
+  000B                  52     CLOSED_2   EQU SENS.3
+  000C                  53     BlOCKED_1  EQU SENS.4
+  000D                  54     BlOCKED_2  EQU SENS.5
+                        55
+                        56     ; Ausgabevektor
+                        57     ; OPEN_1        Tür 1 soll geöffnet werden
+                        58     ; OPEN_2        Tür 2 soll geöffnet werden
+                        59     ; CLOSE_1       Tür 1 soll geschlossen werden
+                        60     ; CLOSE_2       Tür 2 soll geschlossen werden
+                        61
+  0022                  62     MOTR EQU 22H
+  0010                  63     OPEN_1 EQU MOTR.0
+  0011                  64     OPEN_2 EQU MOTR.1
+  0012                  65     CLOSE_1 EQU MOTR.2
+  0013                  66     CLOSE_2 EQU MOTR.3
+                        67
+                        68     ; FlipFlops zum Zwischenspeichern
+                        69
+  0023                  70     FF EQU 23H
+  0018                  71     STOP_1_FF EQU FF.0
+  0019                  72     STOP_2_FF EQU FF.1
+  001A                  73     OPEN_1_FF EQU FF.2
+  001B                  74     OPEN_2_FF EQU FF.3
+                        75     ; INITIALISIERUNG
+                        76     Init:
+001F 752000             77         MOV TAST, #00H
+0022 752100             78         MOV SENS, #00H ; oxC um die Closed Variablen zu setzen, wird duch P1 gesetzt
+                        79         ; MOV CLOSED_1, 1 ; Tür eins ist geschlossen
+0025 752200             80         MOV MOTR, #00H
+                        81
+0028 758000             82         MOV P0, #00H ; P0 wird verwendet um TAST von der IDE anzusprechen
+002B 75900C             83         MOV P1, #0CH ; P1 wird verwendet um SENS in der IDE anzuzeigen
+002E 75A000             84         MOV P2, #00H ; P2 wird verwendet um MOTR in der IDE anzuzeigen
+                        85
+0031 752300             86         MOV FF, #00H
+                        87
+                        88         ; TIMER Kram
+0034 75A89A             89         MOV IE, #10011010b
+0037 758922             90         MOV tmod, #00100010b ; 1. Bit für Timer0 -> mod 2 und 5. Bit für Timer1 -> mod 2
+003A 758A00             91         MOV tl0, #000h  ; Timer0-Initionalsierung
+003D 758C01             92         MOV th0, #001h
+                        93
+0040 758B00             94         MOV tl1, #000h  ; Timer1-Initionalsierung
+0043 758D01             95         MOV th1, #001h
+                        96
+0046 7905               97         MOV r1, #5h
+0048 7A05               98         MOV r2, #5h
+                        99
+004A 02004D            100         LJMP Anfang
+                       101
                        102
-                       103     Anfang:
-                       104         ; Eingaben aus Port 0 in TAST schreiben und SENS und MOTR in Port 1 und 2 (IDE-Anzeige) schreiben
-0049 858020            105         MOV TAST, P0
-004C 859021            106         MOV SENS, P1
-004F 8522A0            107         MOV P2, MOTR
-0052 8523B0            108         MOV P3, FF
-                       109
-                       110         ; ------------------------------------------ Tür 1
-                       111
-                       112         ; Abfrage ob ein Stop-Taster (innen oder außen) für Tür 1 gedrückt wurder
-0055 A200              113         MOV C, STOP_IN_1
-0057 7202              114         ORL C, STOP_OUT_1
-0059 4044              115         JC SET_STOP_1_FF
-                       116
-                       117     CONTINUE_AFTER_STOP_1_FF_SET:
-                       118
-                       119         ; Wenn Stop-Taster 1 (FlipFlop) und Freigabe gesetzt, OPEN_1 (Motor 1) auf 1 setzen
-005B A218              120         MOV C, STOP_1_FF
-005D 8204              121         ANL C, DRIVERS_OK
-005F 4043              122         JC SET_OPEN_1_FF
-                       123
-                       124     CONTINUE_AFTER_OPEN_1_FF_SET:
-                       125
-                       126         ; Schauen ob die Tür 1 geöffnet ist (Endtaster gesetzt) und wenn ja den Motor beenden und Timer s
-0061 A210              127         MOV C, OPEN_1
-0063 8208              128         ANL C, OPENED_1
-0065 4023              129         JC START_TIMER_DOOR_1
-                       130     CONTINUE_AFTER_TIMER_1_SET:
-                       131
-                       132         ; Wenn Tür nicht zu ist und der Zu-Motor an ist, dann schaue ob Blockiert
-0067 A20A              133         MOV C, CLOSED_1
-0069 B3                134         CPL C
-006A 8212              135         ANL C, CLOSE_1
-006C 403F              136         JC CHECK_FOR_BLOCKED_DOOR_1
-                       137
-                       138     CONTINUE_AFTER_CHECK_FOR_BLOCKED_DOOR_1:
-                       139
-                       140         ; ------------------------------------------ Tür 2
+                       103     ;-----------------------------------------
+                       104     ; PROGRAMM-SCHLEIFE
+                       105     ;-----------------------------------------
+                       106
+                       107     Anfang:
+                       108         ; Eingaben aus Port 0 in TAST schreiben und SENS und MOTR in Port 1 und 2 (IDE-Anzeige) schreiben
+004D 858020            109         MOV TAST, P0
+0050 859021            110         MOV SENS, P1
+0053 8522A0            111         MOV P2, MOTR
+0056 8523B0            112         MOV P3, FF
+                       113
+                       114         ; ------------------------------------------ Tür 1
+                       115
+                       116         ; Abfrage ob ein Stop-Taster (innen oder außen) für Tür 1 gedrückt wurder
+0059 A200              117         MOV C, STOP_IN_1
+005B 7202              118         ORL C, STOP_OUT_1
+005D 4044              119         JC SET_STOP_1_FF
+                       120
+                       121     CONTINUE_AFTER_STOP_1_FF_SET:
+                       122
+                       123         ; Wenn Stop-Taster 1 (FlipFlop) und Freigabe gesetzt, OPEN_1 (Motor 1) auf 1 setzen
+005F A218              124         MOV C, STOP_1_FF
+0061 8204              125         ANL C, DRIVERS_OK
+0063 4043              126         JC SET_OPEN_1_FF
+                       127
+                       128     CONTINUE_AFTER_OPEN_1_FF_SET:
+                       129
+                       130         ; Schauen ob die Tür 1 geöffnet ist (Endtaster gesetzt) und wenn ja den Motor beenden und Timer s
+0065 A210              131         MOV C, OPEN_1
+0067 8208              132         ANL C, OPENED_1
+0069 4023              133         JC START_TIMER_DOOR_1
+                       134     CONTINUE_AFTER_TIMER_1_SET:
+                       135
+                       136         ; Wenn Tür nicht zu ist und der Zu-Motor an ist, dann schaue ob Blockiert
+006B A20A              137         MOV C, CLOSED_1
+006D B3                138         CPL C
+006E 8212              139         ANL C, CLOSE_1
+0070 403F              140         JC CHECK_FOR_BLOCKED_DOOR_1
                        141
-                       142         ; Abfrage ob ein Stop-Taster (innen oder außen) für Tür 2 gedrückt wurder
-006E A201              143         MOV C, STOP_IN_2
-0070 7203              144         ORL C, STOP_OUT_2
-0072 4054              145         JC SET_STOP_2_FF
-                       146
-                       147     CONTINUE_AFTER_STOP_2_FF_SET:
-                       148
-                       149         ; Wenn Stop-Taster 2 (FlipFlop) und Freigabe gesetzt, OPEN_2 (Motor 2) auf 1 setzen
-0074 A219              150         MOV C, STOP_2_FF
-0076 8204              151         ANL C, DRIVERS_OK
-0078 4053              152         JC SET_OPEN_2_FF
-                       153
-                       154     CONTINUE_AFTER_OPEN_2_FF_SET:
-                       155
-                       156         ; Schauen ob die Tür 2 geöffnet ist (Endtaster gesetzt) und wenn ja den Motor beenden und Timer s
-007A A211              157         MOV C, OPEN_2
-007C 8209              158         ANL C, OPENED_2
-007E 4034              159         JC START_TIMER_DOOR_2
-                       160     CONTINUE_AFTER_TIMER_2_SET:
-                       161
-                       162         ; Wenn Tür nicht zu ist und der Zu-Motor an ist, dann schaue ob Blockiert
-0080 A20B              163         MOV C, CLOSED_2
-0082 B3                164         CPL C
-0083 8213              165         ANL C, CLOSE_2
-0085 404F              166         JC CHECK_FOR_BLOCKED_DOOR_2
-                       167
-                       168     CONTINUE_AFTER_CHECK_FOR_BLOCKED_DOOR_2:
-                       169
-0087 020049            170         LJMP Anfang
+                       142     CONTINUE_AFTER_CHECK_FOR_BLOCKED_DOOR_1:
+                       143
+                       144         ; ------------------------------------------ Tür 2
+                       145
+                       146         ; Abfrage ob ein Stop-Taster (innen oder außen) für Tür 2 gedrückt wurder
+0072 A201              147         MOV C, STOP_IN_2
+0074 7203              148         ORL C, STOP_OUT_2
+0076 4054              149         JC SET_STOP_2_FF
+                       150
+                       151     CONTINUE_AFTER_STOP_2_FF_SET:
+                       152
+                       153         ; Wenn Stop-Taster 2 (FlipFlop) und Freigabe gesetzt, OPEN_2 (Motor 2) auf 1 setzen
+0078 A219              154         MOV C, STOP_2_FF
+007A 8204              155         ANL C, DRIVERS_OK
+007C 4053              156         JC SET_OPEN_2_FF
+                       157
+                       158     CONTINUE_AFTER_OPEN_2_FF_SET:
+                       159
+                       160         ; Schauen ob die Tür 2 geöffnet ist (Endtaster gesetzt) und wenn ja den Motor beenden und Timer s
+007E A211              161         MOV C, OPEN_2
+0080 8209              162         ANL C, OPENED_2
+0082 4034              163         JC START_TIMER_DOOR_2
+                       164     CONTINUE_AFTER_TIMER_2_SET:
+                       165
+                       166         ; Wenn Tür nicht zu ist und der Zu-Motor an ist, dann schaue ob Blockiert
+0084 A20B              167         MOV C, CLOSED_2
+0086 B3                168         CPL C
+0087 8213              169         ANL C, CLOSE_2
+0089 404F              170         JC CHECK_FOR_BLOCKED_DOOR_2
                        171
-                       172
-                       173     ;-------------------------------------------------
-                       174     ; Einzele Programmschnippsel
-                       175     ;-------------------------------------------------
+                       172     CONTINUE_AFTER_CHECK_FOR_BLOCKED_DOOR_2:
+                       173
+008B 02004D            174         LJMP Anfang
+                       175
                        176
-                       177
-                       178     START_TIMER_DOOR_1:
-008A D28C              179         SETB tr0; start timer0
+                       177     ;-------------------------------------------------
+                       178     ; Einzele Programmschnippsel
+                       179     ;-------------------------------------------------
                        180
-008C 7905              181         MOV r1, #5h ; r1 auf 5 setzen; im echten Leben sollte das 39368
-008E 020067            182         LJMP CONTINUE_AFTER_TIMER_1_SET
-                       183
+                       181
+                       182     START_TIMER_DOOR_1:
+008E D28C              183         SETB tr0; start timer0
                        184
-                       185     ; sobald Tür 1 geöffnet ist, läuft ein Timer, der bei jedem Interupt hierher springt
-                       186     TIMEOUT_TIMER_DOOR_1:
-                       187         ; INC       r1 ; Hochzählen, wie oft der Timer abgelaufen ist
-                       188         ; CJNE      r1, #5h, TMP ; Schleife der Wiederholungen des Timers (wir brauchen 39368 Wiederholun
-                       189
-0091 D90B              190         DJNZ r1, TMP; r1 dekrementieren und wegspringen, wenn ungleich 0 (Decrement Jump Not Zero)
-                       191
-                       192         ; Hier gehts weiter, wenn der Timer oft genug abgelaufen ist (wenn die Tür lange genug offen war)
-                       193         ; -> Timer & Motor ausschalten und Stop-Anfragen resetten
-                       194         ; MOV       r1, #00h
-0093 C28C              195         CLR tr0 ; stop timer0
-                       196
-0095 C218              197         CLR STOP_1_FF; Resetten des Stop 1 FlipFlop
-0097 C21A              198         CLR OPEN_1_FF ; Resetten des Open 1 FlopFlop
-0099 C210              199         CLR OPEN_1 ; Motor nicht mehr auf öffnend setzen
-009B D212              200         SETB CLOSE_1 ; Motor auf schließend setzen
+                       185         ; MOV r1, #5h ; r1 auf 5 setzen; im echten Leben sollte das 39368
+0090 02006B            186         LJMP CONTINUE_AFTER_TIMER_1_SET
+                       187
+                       188
+                       189     ; sobald Tür 1 geöffnet ist, läuft ein Timer, der bei jedem Interupt hierher springt
+                       190     TIMEOUT_TIMER_DOOR_1:
+                       191         ; INC       r1 ; Hochzählen, wie oft der Timer abgelaufen ist
+                       192         ; CJNE      r1, #5h, TMP ; Schleife der Wiederholungen des Timers (wir brauchen 39368 Wiederholun
+                       193
+0093 D90D              194         DJNZ r1, TMP; r1 dekrementieren und wegspringen, wenn ungleich 0 (Decrement Jump Not Zero)
+                       195
+                       196         ; Hier gehts weiter, wenn der Timer oft genug abgelaufen ist (wenn die Tür lange genug offen war)
+                       197         ; -> Timer & Motor ausschalten und Stop-Anfragen resetten
+                       198         ; MOV       r1, #00h
+0095 7905              199         MOV r1, #5h ; r1 auf 5 setzen; im echten Leben sollte das 39368
+0097 C28C              200         CLR tr0 ; stop timer0
                        201
-009D 22                202         RET
-                       203
-                       204     TMP:
-009E 22                205         RET
+0099 C218              202         CLR STOP_1_FF; Resetten des Stop 1 FlipFlop
+009B C21A              203         CLR OPEN_1_FF ; Resetten des Open 1 FlopFlop
+009D C210              204         CLR OPEN_1 ; Motor nicht mehr auf öffnend setzen
+009F D212              205         SETB CLOSE_1 ; Motor auf schließend setzen
                        206
-                       207     SET_STOP_1_FF:
-009F D218              208         SETB STOP_1_FF
-00A1 02005B            209         LJMP CONTINUE_AFTER_STOP_1_FF_SET
-                       210
-                       211     SET_OPEN_1_FF:
-00A4 D21A              212         SETB OPEN_1_FF
-00A6 D210              213         SETB OPEN_1
-00A8 C212              214         CLR CLOSE_1
-00AA 020061            215         LJMP CONTINUE_AFTER_OPEN_1_FF_SET
-                       216
-                       217     CHECK_FOR_BLOCKED_DOOR_1:
-00AD A20C              218         MOV C, BlOCKED_1
-00AF 40F3              219         JC SET_OPEN_1_FF
-00B1 02006E            220         LJMP CONTINUE_AFTER_CHECK_FOR_BLOCKED_DOOR_1
+00A1 22                207         RET
+                       208
+                       209     TMP:
+00A2 22                210         RET
+                       211
+                       212     SET_STOP_1_FF:
+00A3 D218              213         SETB STOP_1_FF
+00A5 02005F            214         LJMP CONTINUE_AFTER_STOP_1_FF_SET
+                       215
+                       216     SET_OPEN_1_FF:
+00A8 D21A              217         SETB OPEN_1_FF
+00AA D210              218         SETB OPEN_1
+00AC C212              219         CLR CLOSE_1
+00AE 020065            220         LJMP CONTINUE_AFTER_OPEN_1_FF_SET
                        221
-                       222     ;-----------------------------------------------
-                       223
-                       224     START_TIMER_DOOR_2:
-00B4 D28E              225         SETB tr1; start timer1
-00B6 7A05              226         MOV r2, #5h ; r2 auf 5 setzen; im echten Leben sollte das 39368
-                       227
-00B8 020080            228         LJMP CONTINUE_AFTER_TIMER_2_SET
-                       229
-                       230
-                       231     ; sobald Tür 2 geöffnet ist, läuft ein Timer, der bei jedem Interupt hierher springt
-                       232     TIMEOUT_TIMER_DOOR_2:
-                       233         ;INC        r2 ; Hochzählen, wie oft der Timer abgelaufen ist
-                       234         ;CJNE       r2, #5h, TMP ; Schleife der Wiederholungen des Timers (wir brauchen 39368 Wiederholun
-00BB DAE1              235         DJNZ r2, TMP
-                       236
-                       237         ; Hier gehts weiter, wenn der Timer oft genug abgelaufen ist (wenn die Tür lange genug offen war)
-                       238         ; -> Timer & Motor ausschalten und Stop-Anfragen resetten
-                       239         ; MOV       r2, #00h
-00BD C28E              240         CLR tr1 ; stop timer1
+                       222     CHECK_FOR_BLOCKED_DOOR_1:
+00B1 A20C              223         MOV C, BlOCKED_1
+00B3 40F3              224         JC SET_OPEN_1_FF
+00B5 020072            225         LJMP CONTINUE_AFTER_CHECK_FOR_BLOCKED_DOOR_1
+                       226
+                       227     ;-----------------------------------------------
+                       228
+                       229     START_TIMER_DOOR_2:
+00B8 D28E              230         SETB tr1; start timer1
+                       231         ;MOV r2, #5h ; r2 auf 5 setzen; im echten Leben sollte das 39368
+                       232
+00BA 020084            233         LJMP CONTINUE_AFTER_TIMER_2_SET
+                       234
+                       235
+                       236     ; sobald Tür 2 geöffnet ist, läuft ein Timer, der bei jedem Interupt hierher springt
+                       237     TIMEOUT_TIMER_DOOR_2:
+                       238         ;INC        r2 ; Hochzählen, wie oft der Timer abgelaufen ist
+                       239         ;CJNE       r2, #5h, TMP ; Schleife der Wiederholungen des Timers (wir brauchen 39368 Wiederholun
+00BD DAE3              240         DJNZ r2, TMP
                        241
-00BF C219              242         CLR STOP_2_FF; Resetten des Stop 2 FlipFlop
-00C1 C21B              243         CLR OPEN_2_FF ; Resetten des Open 2 FlopFlop
-00C3 C211              244         CLR OPEN_2 ; Motor nicht mehr auf öffnend setzen
-00C5 D213              245         SETB CLOSE_2 ; Motor auf schließend setzen
-                       246
-00C7 22                247         RET
-                       248
-                       249     SET_STOP_2_FF:
-00C8 D219              250         SETB STOP_2_FF
-00CA 020074            251         LJMP CONTINUE_AFTER_STOP_2_FF_SET
+                       242         ; Hier gehts weiter, wenn der Timer oft genug abgelaufen ist (wenn die Tür lange genug offen war)
+                       243         ; -> Timer & Motor ausschalten und Stop-Anfragen resetten
+                       244         ; MOV       r2, #00h
+00BF 7A05              245         MOV r2, #5h ; r2 auf 5 setzen; im echten Leben sollte das 39368
+00C1 C28E              246         CLR tr1 ; stop timer1
+                       247
+00C3 C219              248         CLR STOP_2_FF; Resetten des Stop 2 FlipFlop
+00C5 C21B              249         CLR OPEN_2_FF ; Resetten des Open 2 FlopFlop
+00C7 C211              250         CLR OPEN_2 ; Motor nicht mehr auf öffnend setzen
+00C9 D213              251         SETB CLOSE_2 ; Motor auf schließend setzen
                        252
-                       253     SET_OPEN_2_FF:
-00CD D21B              254         SETB OPEN_2_FF
-00CF D211              255         SETB OPEN_2
-00D1 C213              256         CLR CLOSE_2
-00D3 02007A            257         LJMP CONTINUE_AFTER_OPEN_2_FF_SET
+00CB 22                253         RET
+                       254
+                       255     SET_STOP_2_FF:
+00CC D219              256         SETB STOP_2_FF
+00CE 020078            257         LJMP CONTINUE_AFTER_STOP_2_FF_SET
                        258
-                       259     CHECK_FOR_BLOCKED_DOOR_2:
-00D6 A20D              260         MOV C, BlOCKED_2
-00D8 40F3              261         JC SET_OPEN_2_FF
-00DA 020087            262         LJMP CONTINUE_AFTER_CHECK_FOR_BLOCKED_DOOR_2
-                       263
-                       264     END
+                       259     SET_OPEN_2_FF:
+00D1 D21B              260         SETB OPEN_2_FF
+00D3 D211              261         SETB OPEN_2
+00D5 C213              262         CLR CLOSE_2
+00D7 02007E            263         LJMP CONTINUE_AFTER_OPEN_2_FF_SET
+                       264
+                       265     CHECK_FOR_BLOCKED_DOOR_2:
+00DA A20D              266         MOV C, BlOCKED_2
+00DC 40F3              267         JC SET_OPEN_2_FF
+00DE 02008B            268         LJMP CONTINUE_AFTER_CHECK_FOR_BLOCKED_DOOR_2
+                       269
+                       270     END
 ASSEMBLY COMPLETE, NO ERRORS FOUND, 1 WARNING
 
 
@@ -281,7 +287,7 @@ ADCLK. . . . . . . . . . . . . . . .  D  ADDR  00F2H  NOT USED
 ADCON. . . . . . . . . . . . . . . .  D  ADDR  00F3H  NOT USED
 ADDH . . . . . . . . . . . . . . . .  D  ADDR  00F5H  NOT USED
 ADDL . . . . . . . . . . . . . . . .  D  ADDR  00F4H  NOT USED
-ANFANG . . . . . . . . . . . . . . .  C  ADDR  0049H
+ANFANG . . . . . . . . . . . . . . .  C  ADDR  004DH
 AUXR . . . . . . . . . . . . . . . .  D  ADDR  008EH  NOT USED
 AUXR1. . . . . . . . . . . . . . . .  D  ADDR  00A2H  NOT USED
 B. . . . . . . . . . . . . . . . . .  D  ADDR  00F0H  NOT USED
@@ -316,8 +322,8 @@ CCF4 . . . . . . . . . . . . . . . .  B  ADDR  00DCH  NOT USED
 CCON . . . . . . . . . . . . . . . .  D  ADDR  00D8H  NOT USED
 CFINT. . . . . . . . . . . . . . . .  C  ADDR  0033H  NOT USED
 CH . . . . . . . . . . . . . . . . .  D  ADDR  00F9H  NOT USED
-CHECK_FOR_BLOCKED_DOOR_1 . . . . . .  C  ADDR  00ADH
-CHECK_FOR_BLOCKED_DOOR_2 . . . . . .  C  ADDR  00D6H
+CHECK_FOR_BLOCKED_DOOR_1 . . . . . .  C  ADDR  00B1H
+CHECK_FOR_BLOCKED_DOOR_2 . . . . . .  C  ADDR  00DAH
 CKCON. . . . . . . . . . . . . . . .  D  ADDR  008FH  NOT USED
 CKCON0 . . . . . . . . . . . . . . .  D  ADDR  008FH  NOT USED
 CKRL . . . . . . . . . . . . . . . .  D  ADDR  0097H  NOT USED
@@ -329,14 +335,14 @@ CLOSED_2 . . . . . . . . . . . . . .  N  NUMB  000BH
 CLOSE_1. . . . . . . . . . . . . . .  N  NUMB  0012H
 CLOSE_2. . . . . . . . . . . . . . .  N  NUMB  0013H
 CMOD . . . . . . . . . . . . . . . .  D  ADDR  00D9H  NOT USED
-CONTINUE_AFTER_CHECK_FOR_BLOCKED_DOOR_1  C  ADDR  006EH
-CONTINUE_AFTER_CHECK_FOR_BLOCKED_DOOR_2  C  ADDR  0087H
-CONTINUE_AFTER_OPEN_1_FF_SET . . . .  C  ADDR  0061H
-CONTINUE_AFTER_OPEN_2_FF_SET . . . .  C  ADDR  007AH
-CONTINUE_AFTER_STOP_1_FF_SET . . . .  C  ADDR  005BH
-CONTINUE_AFTER_STOP_2_FF_SET . . . .  C  ADDR  0074H
-CONTINUE_AFTER_TIMER_1_SET . . . . .  C  ADDR  0067H
-CONTINUE_AFTER_TIMER_2_SET . . . . .  C  ADDR  0080H
+CONTINUE_AFTER_CHECK_FOR_BLOCKED_DOOR_1  C  ADDR  0072H
+CONTINUE_AFTER_CHECK_FOR_BLOCKED_DOOR_2  C  ADDR  008BH
+CONTINUE_AFTER_OPEN_1_FF_SET . . . .  C  ADDR  0065H
+CONTINUE_AFTER_OPEN_2_FF_SET . . . .  C  ADDR  007EH
+CONTINUE_AFTER_STOP_1_FF_SET . . . .  C  ADDR  005FH
+CONTINUE_AFTER_STOP_2_FF_SET . . . .  C  ADDR  0078H
+CONTINUE_AFTER_TIMER_1_SET . . . . .  C  ADDR  006BH
+CONTINUE_AFTER_TIMER_2_SET . . . . .  C  ADDR  0084H
 CPRL2. . . . . . . . . . . . . . . .  B  ADDR  00C8H  NOT USED
 CR . . . . . . . . . . . . . . . . .  B  ADDR  00DEH  NOT USED
 CT2. . . . . . . . . . . . . . . . .  B  ADDR  00C9H  NOT USED
@@ -439,10 +445,10 @@ SADEN_1. . . . . . . . . . . . . . .  D  ADDR  00BAH  NOT USED
 SBUF . . . . . . . . . . . . . . . .  D  ADDR  0099H  NOT USED
 SCON . . . . . . . . . . . . . . . .  D  ADDR  0098H  NOT USED
 SENS . . . . . . . . . . . . . . . .  N  NUMB  0021H
-SET_OPEN_1_FF. . . . . . . . . . . .  C  ADDR  00A4H
-SET_OPEN_2_FF. . . . . . . . . . . .  C  ADDR  00CDH
-SET_STOP_1_FF. . . . . . . . . . . .  C  ADDR  009FH
-SET_STOP_2_FF. . . . . . . . . . . .  C  ADDR  00C8H
+SET_OPEN_1_FF. . . . . . . . . . . .  C  ADDR  00A8H
+SET_OPEN_2_FF. . . . . . . . . . . .  C  ADDR  00D1H
+SET_STOP_1_FF. . . . . . . . . . . .  C  ADDR  00A3H
+SET_STOP_2_FF. . . . . . . . . . . .  C  ADDR  00CCH
 SINT . . . . . . . . . . . . . . . .  C  ADDR  0023H  NOT USED
 SM0. . . . . . . . . . . . . . . . .  B  ADDR  009FH  NOT USED
 SM1. . . . . . . . . . . . . . . . .  B  ADDR  009EH  NOT USED
@@ -454,8 +460,8 @@ SPDAT. . . . . . . . . . . . . . . .  D  ADDR  00C5H  NOT USED
 SPDR . . . . . . . . . . . . . . . .  D  ADDR  0086H  NOT USED
 SPSR . . . . . . . . . . . . . . . .  D  ADDR  00AAH  NOT USED
 SPSTA. . . . . . . . . . . . . . . .  D  ADDR  00C4H  NOT USED
-START_TIMER_DOOR_1 . . . . . . . . .  C  ADDR  008AH
-START_TIMER_DOOR_2 . . . . . . . . .  C  ADDR  00B4H
+START_TIMER_DOOR_1 . . . . . . . . .  C  ADDR  008EH
+START_TIMER_DOOR_2 . . . . . . . . .  C  ADDR  00B8H
 STOP_1_FF. . . . . . . . . . . . . .  N  NUMB  0018H
 STOP_2_FF. . . . . . . . . . . . . .  N  NUMB  0019H
 STOP_IN_1. . . . . . . . . . . . . .  N  NUMB  0000H
@@ -477,8 +483,8 @@ TH0. . . . . . . . . . . . . . . . .  D  ADDR  008CH
 TH1. . . . . . . . . . . . . . . . .  D  ADDR  008DH
 TH2. . . . . . . . . . . . . . . . .  D  ADDR  00CDH  NOT USED
 TI . . . . . . . . . . . . . . . . .  B  ADDR  0099H  NOT USED
-TIMEOUT_TIMER_DOOR_1 . . . . . . . .  C  ADDR  0091H
-TIMEOUT_TIMER_DOOR_2 . . . . . . . .  C  ADDR  00BBH
+TIMEOUT_TIMER_DOOR_1 . . . . . . . .  C  ADDR  0093H
+TIMEOUT_TIMER_DOOR_2 . . . . . . . .  C  ADDR  00BDH
 TIMER0 . . . . . . . . . . . . . . .  C  ADDR  000BH  NOT USED
 TIMER1 . . . . . . . . . . . . . . .  C  ADDR  001BH  NOT USED
 TIMER2 . . . . . . . . . . . . . . .  C  ADDR  002BH  NOT USED
@@ -486,7 +492,7 @@ TL0. . . . . . . . . . . . . . . . .  D  ADDR  008AH
 TL1. . . . . . . . . . . . . . . . .  D  ADDR  008BH
 TL2. . . . . . . . . . . . . . . . .  D  ADDR  00CCH  NOT USED
 TMOD . . . . . . . . . . . . . . . .  D  ADDR  0089H
-TMP. . . . . . . . . . . . . . . . .  C  ADDR  009EH
+TMP. . . . . . . . . . . . . . . . .  C  ADDR  00A2H
 TR0. . . . . . . . . . . . . . . . .  B  ADDR  008CH
 TR1. . . . . . . . . . . . . . . . .  B  ADDR  008EH
 TR2. . . . . . . . . . . . . . . . .  B  ADDR  00CAH  NOT USED

@@ -39,19 +39,21 @@ RETI
 ; Zeug das Menschen verändern können (Taster)
 TAST EQU 20H
 STOP_IN_1  EQU TAST.0
-STOP_IN_2  EQU TAST.1
-STOP_OUT_1 EQU TAST.2
-STOP_OUT_2 EQU TAST.3
+STOP_OUT_1 EQU TAST.1
 DRIVERS_OK EQU TAST.4
+STOP_IN_2  EQU TAST.6
+STOP_OUT_2 EQU TAST.7
+
 
 ; Das was der Bus fühlt (Gefühle bzw. Sensoren)
 SENS EQU 21H
 OPENED_1   EQU SENS.0
-OPENED_2   EQU SENS.1
-CLOSED_1   EQU SENS.2
-CLOSED_2   EQU SENS.3
-BlOCKED_1  EQU SENS.4
-BlOCKED_2  EQU SENS.5
+CLOSED_1   EQU SENS.1
+BlOCKED_1  EQU SENS.2
+
+OPENED_2   EQU SENS.5
+CLOSED_2   EQU SENS.6
+BlOCKED_2  EQU SENS.7
 
 ; Ausgabevektor
 ; OPEN_1        Tür 1 soll geöffnet werden
@@ -61,26 +63,26 @@ BlOCKED_2  EQU SENS.5
 
 MOTR EQU 22H
 OPEN_1 EQU MOTR.0
-OPEN_2 EQU MOTR.1
-CLOSE_1 EQU MOTR.2
-CLOSE_2 EQU MOTR.3
+CLOSE_1 EQU MOTR.1
+
+OPEN_2 EQU MOTR.6
+CLOSE_2 EQU MOTR.7
 
 ; FlipFlops zum Zwischenspeichern
 
 FF EQU 23H
 STOP_1_FF EQU FF.0
-STOP_2_FF EQU FF.1
-OPEN_1_FF EQU FF.2
-OPEN_2_FF EQU FF.3
+OPEN_1_FF EQU FF.1
+STOP_2_FF EQU FF.6
+OPEN_2_FF EQU FF.7
 ; INITIALISIERUNG
 Init:
     MOV TAST, #00H
-    MOV SENS, #00H ; oxC um die Closed Variablen zu setzen, wird duch P1 gesetzt
-    ; MOV CLOSED_1, 1 ; Tür eins ist geschlossen
+    MOV SENS, #00H
     MOV MOTR, #00H
 
     MOV P0, #00H ; P0 wird verwendet um TAST von der IDE anzusprechen
-    MOV P1, #0CH ; P1 wird verwendet um SENS in der IDE anzuzeigen
+    MOV P1, #42H ; P1 wird verwendet um SENS in der IDE anzuzeigen
     MOV P2, #00H ; P2 wird verwendet um MOTR in der IDE anzuzeigen
 
     MOV FF, #00H

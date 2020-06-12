@@ -3,7 +3,7 @@
 ;----------------------------------
 CSEG AT 0H
 LJMP Init
-ORG 80H; TODO: brauchen wir dashier wirklich??? Sagt, wo das Programm im Speicher abgelegt wird...
+ORG 80H
 
 ; Einsprung für den Timeout des Timers
 ORG 000Bh
@@ -32,26 +32,26 @@ RETI
 ; BLOCKED_1     Jemand steht in der schließenden Tür 1
 ; BLOCKED_2     Jemand steht in der schließenden Tür 2
 
-
-
-
-; TODO bessere Adressen aussuchen weil die manuelle Änderung gerade echt kacke ist!
 ; Zeug das Menschen verändern können (Taster)
 TAST EQU 20H
 STOP_IN_1  EQU TAST.0
-STOP_IN_2  EQU TAST.1
-STOP_OUT_1 EQU TAST.2
-STOP_OUT_2 EQU TAST.3
+STOP_OUT_1 EQU TAST.1
+
 DRIVERS_OK EQU TAST.4
+
+STOP_IN_2  EQU TAST.6
+STOP_OUT_2 EQU TAST.7
+
 
 ; Das was der Bus fühlt (Gefühle bzw. Sensoren)
 SENS EQU 21H
 OPENED_1   EQU SENS.0
-OPENED_2   EQU SENS.1
-CLOSED_1   EQU SENS.2
-CLOSED_2   EQU SENS.3
-BlOCKED_1  EQU SENS.4
-BlOCKED_2  EQU SENS.5
+CLOSED_1   EQU SENS.1
+BlOCKED_1  EQU SENS.2
+
+OPENED_2   EQU SENS.5
+CLOSED_2   EQU SENS.6
+BlOCKED_2  EQU SENS.7
 
 ; Ausgabevektor
 ; OPEN_1        Tür 1 soll geöffnet werden
@@ -59,43 +59,45 @@ BlOCKED_2  EQU SENS.5
 ; CLOSE_1       Tür 1 soll geschlossen werden
 ; CLOSE_2       Tür 2 soll geschlossen werden
 
+; Motorensteuerung -> einer An Tür bewegt sich | beide an -> Tür blockiert 
 MOTR EQU 22H
 OPEN_1 EQU MOTR.0
-OPEN_2 EQU MOTR.1
-CLOSE_1 EQU MOTR.2
-CLOSE_2 EQU MOTR.3
+CLOSE_1 EQU MOTR.1
+
+OPEN_2 EQU MOTR.6
+CLOSE_2 EQU MOTR.7
 
 ; FlipFlops zum Zwischenspeichern
-
 FF EQU 23H
 STOP_1_FF EQU FF.0
-STOP_2_FF EQU FF.1
-OPEN_1_FF EQU FF.2
-OPEN_2_FF EQU FF.3
+OPEN_1_FF EQU FF.1
+STOP_2_FF EQU FF.6
+OPEN_2_FF EQU FF.7
+
 ; INITIALISIERUNG
 Init:
     MOV TAST, #00H
-    MOV SENS, #00H ; oxC um die Closed Variablen zu setzen, wird duch P1 gesetzt
-    ; MOV CLOSED_1, 1 ; Tür eins ist geschlossen
+    MOV SENS, #00H
     MOV MOTR, #00H
-
-    MOV P0, #00H ; P0 wird verwendet um TAST von der IDE anzusprechen
-    MOV P1, #0CH ; P1 wird verwendet um SENS in der IDE anzuzeigen
-    MOV P2, #00H ; P2 wird verwendet um MOTR in der IDE anzuzeigen
-
     MOV FF, #00H
 
+    MOV P0, #00H ; P0 wird verwendet um TAST von der IDE anzusprechen
+    MOV P1, #42H ; P1 wird verwendet um SENS in der IDE anzuzeigen
+    MOV P2, #00H ; P2 wird verwendet um MOTR in der IDE anzuzeigen
+
+
+
     ; TIMER Kram
-    MOV IE, #10011010b
-    MOV tmod, #00100010b ; 1. Bit für Timer0 -> mod 2 und 5. Bit für Timer1 -> mod 2
-    MOV tl0, #000h  ; Timer0-Initionalsierung 
+    MOV IE, #10011010b      ; aktivieren der Timer-Interupts
+    MOV tmod, #00100010b    ; 1. Bit für Timer0 -> mod 2 und 5. Bit für Timer1 -> mod 2
+    MOV tl0, #000h          ; Timer0-Initialsierung 
     MOV th0, #001h
 
-    MOV tl1, #000h  ; Timer1-Initionalsierung 
+    MOV tl1, #000h          ; Timer1-Initialsierung 
     MOV th1, #001h
 
-    MOV r1, #5h
-    MOV r2, #5h
+    MOV r1, #5h     ; Wiederholungen für Timer1 auf 5 setzen (im echten Leben bräuchten wir 39368 Wiederholungen)
+    MOV r2, #5h     ; Wiederholungen für Timer2 auf 5 setzen (im echten Leben bräuchten wir 39368 Wiederholungen)
 
     LJMP Anfang
 
@@ -105,7 +107,7 @@ Init:
 ;-----------------------------------------
 
 Anfang:
-    ; Eingaben aus Port 0 in TAST schreiben und SENS und MOTR in Port 1 und 2 (IDE-Anzeige) schreiben
+    ; Eingaben aus Port 0 und 1 in TAST und SENS schreiben und MOTR, sowie FF in Port 2 und 3 (IDE-Anzeige) schreiben
     MOV TAST, P0
     MOV SENS, P1
     MOV P2, MOTR
@@ -113,21 +115,21 @@ Anfang:
 
     ; ------------------------------------------ Tür 1
 
-    ; Abfrage ob ein Stop-Taster (innen oder außen) für Tür 1 gedrückt wurder
+    ; Abfrage ob ein Stop-Taster (innen oder außen) für Tür 1 gedrückt wurde (und wenn ja FF setzen)
     MOV C, STOP_IN_1
     ORL C, STOP_OUT_1
     JC SET_STOP_1_FF
 
 CONTINUE_AFTER_STOP_1_FF_SET:
 
-    ; Wenn Stop-Taster 1 (FlipFlop) und Freigabe gesetzt, OPEN_1 (Motor 1) auf 1 setzen
+    ; Wenn Stop-Taster 1 (FlipFlop) und Freigabe gesetzt, OPEN_1 (Motor 1 bzw. zugehöriges FF) auf 1 setzen
     MOV C, STOP_1_FF
     ANL C, DRIVERS_OK
     JC SET_OPEN_1_FF
 
 CONTINUE_AFTER_OPEN_1_FF_SET:
 
-    ; Schauen ob die Tür 1 geöffnet ist (Endtaster gesetzt) und wenn ja den Motor beenden und Timer starten
+    ; Schauen ob die Tür 1 geöffnet ist (Endtaster gesetzt) und wenn ja den Timer starten
     MOV C, OPEN_1
     ANL C, OPENED_1
     JC START_TIMER_DOOR_1
@@ -143,21 +145,21 @@ CONTINUE_AFTER_CHECK_FOR_BLOCKED_DOOR_1:
 
     ; ------------------------------------------ Tür 2
 
-    ; Abfrage ob ein Stop-Taster (innen oder außen) für Tür 2 gedrückt wurder
+    ; Abfrage ob ein Stop-Taster (innen oder außen) für Tür 2 gedrückt wurde
     MOV C, STOP_IN_2
     ORL C, STOP_OUT_2
     JC SET_STOP_2_FF
 
 CONTINUE_AFTER_STOP_2_FF_SET:
 
-    ; Wenn Stop-Taster 2 (FlipFlop) und Freigabe gesetzt, OPEN_2 (Motor 2) auf 1 setzen
+    ; Wenn Stop-Taster 2 (FlipFlop) und Freigabe gesetzt, OPEN_2 (Motor 2 bzw. zugehöriges FF) auf 1 setzen
     MOV C, STOP_2_FF
     ANL C, DRIVERS_OK
     JC SET_OPEN_2_FF
 
 CONTINUE_AFTER_OPEN_2_FF_SET:
 
-    ; Schauen ob die Tür 2 geöffnet ist (Endtaster gesetzt) und wenn ja den Motor beenden und Timer starten
+    ; Schauen ob die Tür 2 geöffnet ist (Endtaster gesetzt) und wenn ja den Timer starten
     MOV C, OPEN_2
     ANL C, OPENED_2
     JC START_TIMER_DOOR_2
@@ -181,28 +183,22 @@ CONTINUE_AFTER_CHECK_FOR_BLOCKED_DOOR_2:
 
 START_TIMER_DOOR_1:
     SETB tr0; start timer0
-    
-    ; MOV r1, #5h ; r1 auf 5 setzen; im echten Leben sollte das 39368
     LJMP CONTINUE_AFTER_TIMER_1_SET
 
 
 ; sobald Tür 1 geöffnet ist, läuft ein Timer, der bei jedem Interupt hierher springt
-TIMEOUT_TIMER_DOOR_1:
-    ; INC	r1 ; Hochzählen, wie oft der Timer abgelaufen ist
-    ; CJNE	r1, #5h, TMP ; Schleife der Wiederholungen des Timers (wir brauchen 39368 Wiederholungen)
-    
+TIMEOUT_TIMER_DOOR_1:    
     DJNZ r1, TMP; r1 dekrementieren und wegspringen, wenn ungleich 0 (Decrement Jump Not Zero)
 
     ; Hier gehts weiter, wenn der Timer oft genug abgelaufen ist (wenn die Tür lange genug offen war)
     ; -> Timer & Motor ausschalten und Stop-Anfragen resetten
-    ; MOV	r1, #00h
-    MOV r1, #5h ; r1 auf 5 setzen; im echten Leben sollte das 39368
-    CLR tr0 ; stop timer0
+    MOV r1, #5h ; r1 auf 5 zurücksetzen (im echten Leben bräuchten wir 39368 Wiederholungen)
+    CLR tr0     ; stop timer0
 
-    CLR STOP_1_FF; Resetten des Stop 1 FlipFlop
-    CLR OPEN_1_FF ; Resetten des Open 1 FlopFlop
-    CLR OPEN_1 ; Motor nicht mehr auf öffnend setzen
-    SETB CLOSE_1 ; Motor auf schließend setzen
+    CLR STOP_1_FF   ; Resetten des Stop 1 FlipFlop
+    CLR OPEN_1_FF   ; Resetten des Open 1 FlopFlop
+    CLR OPEN_1      ; Motor nicht mehr auf öffnend setzen
+    SETB CLOSE_1    ; Motor auf schließend setzen
 
     RET
 
@@ -210,16 +206,19 @@ TMP:
     RET
 
 SET_STOP_1_FF:
+    ; Setzen des "FlipFlops" und zurückspringen
     SETB STOP_1_FF
     LJMP CONTINUE_AFTER_STOP_1_FF_SET
 
 SET_OPEN_1_FF:
+    ; Setzen des "FlipFlops" (plus Motoroutput) und zurückspringen
     SETB OPEN_1_FF
     SETB OPEN_1
     CLR CLOSE_1
     LJMP CONTINUE_AFTER_OPEN_1_FF_SET
 
 CHECK_FOR_BLOCKED_DOOR_1:
+    ; Überprüfen, ob Tür 1 blockiert ist, und wenn ja wieder die Tür öffnen!
     MOV C, BlOCKED_1
     JC SET_OPEN_1_FF
     LJMP CONTINUE_AFTER_CHECK_FOR_BLOCKED_DOOR_1
@@ -235,34 +234,34 @@ START_TIMER_DOOR_2:
 
 ; sobald Tür 2 geöffnet ist, läuft ein Timer, der bei jedem Interupt hierher springt
 TIMEOUT_TIMER_DOOR_2:
-    ;INC	r2 ; Hochzählen, wie oft der Timer abgelaufen ist
-    ;CJNE	r2, #5h, TMP ; Schleife der Wiederholungen des Timers (wir brauchen 39368 Wiederholungen)
     DJNZ r2, TMP
 
     ; Hier gehts weiter, wenn der Timer oft genug abgelaufen ist (wenn die Tür lange genug offen war)
     ; -> Timer & Motor ausschalten und Stop-Anfragen resetten
-    ; MOV	r2, #00h
-    MOV r2, #5h ; r2 auf 5 setzen; im echten Leben sollte das 39368
-    CLR tr1 ; stop timer1
+    MOV r2, #5h ; r2 auf 5 setzen (im echten Leben bräuchten wir 39368 Wiederholungen)
+    CLR tr1     ; stop timer1
 
-    CLR STOP_2_FF; Resetten des Stop 2 FlipFlop
-    CLR OPEN_2_FF ; Resetten des Open 2 FlopFlop
-    CLR OPEN_2 ; Motor nicht mehr auf öffnend setzen
-    SETB CLOSE_2 ; Motor auf schließend setzen
+    CLR STOP_2_FF   ; Resetten des Stop 2 FlipFlop
+    CLR OPEN_2_FF   ; Resetten des Open 2 FlopFlop
+    CLR OPEN_2      ; Motor nicht mehr auf öffnend setzen
+    SETB CLOSE_2    ; Motor auf schließend setzen
 
     RET
 
 SET_STOP_2_FF:
+    ; Setzen des "FlipFlops" und zurückspringen
     SETB STOP_2_FF
     LJMP CONTINUE_AFTER_STOP_2_FF_SET
 
 SET_OPEN_2_FF:
+    ; Setzen des "FlipFlops" (plus Motoroutput) und zurückspringen
     SETB OPEN_2_FF
     SETB OPEN_2
     CLR CLOSE_2
     LJMP CONTINUE_AFTER_OPEN_2_FF_SET
 
 CHECK_FOR_BLOCKED_DOOR_2:
+    ; Überprüfen, ob Tür 1 blockiert ist, und wenn ja wieder die Tür öffnen!
     MOV C, BlOCKED_2
     JC SET_OPEN_2_FF
     LJMP CONTINUE_AFTER_CHECK_FOR_BLOCKED_DOOR_2
